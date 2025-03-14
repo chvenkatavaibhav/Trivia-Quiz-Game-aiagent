@@ -1,4 +1,4 @@
-# Triviza Quiz Game
+# Triviza Quiz Game Ai Agent
 
 ## Overview
 The **Triviza Quiz Game** is an interactive trivia quiz application that allows users to:
