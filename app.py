@@ -1,54 +1,70 @@
 from flask import Flask, render_template, request, jsonify
 import requests
-import random
 
 app = Flask(__name__)
 
-# Store fetched questions in memory
-stored_questions = []
+# Open Trivia Database API URL
+API_URL = "https://opentdb.com/api.php"
+
+# Categories and their corresponding IDs
+CATEGORIES = {
+    "General Knowledge": 9,
+    "Science & Nature": 17,
+    "Computers": 18,
+    "Mathematics": 19,
+    "Mythology": 20,
+    "Sports": 21,
+    "Geography": 22,
+    "History": 23,
+    "Animals": 27,
+}
+
+# Difficulty levels
+DIFFICULTY_LEVELS = ["easy", "medium", "hard"]
+
 
 def fetch_questions(category_id, difficulty, num_questions=10):
-    url = "https://opentdb.com/api.php"
+    """Fetch questions from the Open Trivia Database API."""
     params = {
         "amount": num_questions,
         "category": category_id,
         "difficulty": difficulty,
-        "type": "multiple",
+        "type": "multiple",  # Multiple-choice questions
     }
-    response = requests.get(url, params=params)
+    response = requests.get(API_URL, params=params)
     if response.status_code == 200:
         return response.json()["results"]
     else:
         return None
 
+
 @app.route("/")
 def home():
-    return render_template("index.html")
+    """Render the home page with category and difficulty options."""
+    return render_template("index.html", categories=CATEGORIES, difficulties=DIFFICULTY_LEVELS)
+
 
 @app.route("/start_quiz", methods=["POST"])
 def start_quiz():
-    global stored_questions
+    """Start the quiz by fetching questions based on user selections."""
     data = request.json
-    category_id = int(data["category"])
+    category_id = CATEGORIES[data["category"]]
     difficulty = data["difficulty"]
-    num_questions = int(data["num_questions"])
+    questions = fetch_questions(category_id, difficulty)
+    if questions:
+        return jsonify(questions)
+    else:
+        return jsonify({"error": "Failed to fetch questions"}), 500
 
-    # Fetch new questions only if stored_questions is empty
-    if not stored_questions:
-        questions = fetch_questions(category_id, difficulty, num_questions)
-        if questions:
-            stored_questions = questions  # Store questions for reuse
-            random.shuffle(stored_questions)  # Shuffle questions
-        else:
-            return jsonify({"error": "Failed to fetch questions"}), 500
 
-    return jsonify(stored_questions)
+@app.route("/submit_answer", methods=["POST"])
+def submit_answer():
+    """Check if the user's answer is correct."""
+    data = request.json
+    user_answer = data["user_answer"]
+    correct_answer = data["correct_answer"]
+    return jsonify({"correct": user_answer == correct_answer})
 
-@app.route("/reset_quiz", methods=["POST"])
-def reset_quiz():
-    global stored_questions
-    stored_questions = []  # Clear stored questions
-    return jsonify({"status": "Quiz reset"})
 
 if __name__ == "__main__":
     app.run(debug=True)
