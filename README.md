@@ -42,4 +42,4 @@ The **Triviza Quiz Game** is an interactive trivia quiz application that allows 
 ## How to Run the Project
 1. Clone the repository:
    ```bash
-   git clone https://github.com/chvenkatavaibhav/triviza-quiz-game.git
+   git clone https://github.com/chvenkatavaibhav/Trivia-Quiz-Game-aiagent.git
