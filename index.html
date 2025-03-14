@@ -12,26 +12,17 @@
         <div id="setup">
             <label for="category">Category:</label>
             <select id="category">
-                <option value="9">General Knowledge</option>
-                <option value="17">Science & Nature</option>
-                <option value="18">Computers</option>
-                <option value="19">Mathematics</option>
-                <option value="20">Mythology</option>
-                <option value="21">Sports</option>
-                <option value="22">Geography</option>
-                <option value="23">History</option>
-                <option value="27">Animals</option>
+                {% for category in categories %}
+                    <option value="{{ category }}">{{ category }}</option>
+                {% endfor %}
             </select>
             <br><br>
             <label for="difficulty">Difficulty:</label>
             <select id="difficulty">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+                {% for difficulty in difficulties %}
+                    <option value="{{ difficulty }}">{{ difficulty }}</option>
+                {% endfor %}
             </select>
-            <br><br>
-            <label for="num_questions">Number of Questions:</label>
-            <input type="number" id="num_questions" value="10" min="1" max="50">
             <br><br>
             <button id="start-btn">Start Quiz</button>
         </div>
@@ -39,8 +30,7 @@
             <div class="question" id="question"></div>
             <div class="answers" id="answers"></div>
             <div class="score" id="score"></div>
-            <button id="restart-btn" style="display: none;">Restart Quiz</button>
-            <button id="reset-btn" style="display: none;">Reset Quiz</button>
+            <button id="next-btn" style="display: none;">Next Question</button>
         </div>
     </div>
 
@@ -52,14 +42,13 @@
         document.getElementById("start-btn").addEventListener("click", async () => {
             const category = document.getElementById("category").value;
             const difficulty = document.getElementById("difficulty").value;
-            const numQuestions = document.getElementById("num_questions").value;
 
             const response = await fetch("/start_quiz", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ category, difficulty, num_questions: numQuestions }),
+                body: JSON.stringify({ category, difficulty }),
             });
 
             if (response.ok) {
@@ -70,18 +59,6 @@
             } else {
                 alert("Failed to start quiz. Please try again.");
             }
-        });
-
-        document.getElementById("restart-btn").addEventListener("click", () => {
-            currentQuestionIndex = 0;
-            score = 0;
-            showQuestion();
-            document.getElementById("restart-btn").style.display = "none";
-        });
-
-        document.getElementById("reset-btn").addEventListener("click", async () => {
-            await fetch("/reset_quiz", { method: "POST" });
-            alert("Quiz reset. Start a new quiz to fetch new questions.");
         });
 
         function showQuestion() {
@@ -105,21 +82,38 @@
         }
 
         async function checkAnswer(userAnswer, correctAnswer) {
-            if (userAnswer === correctAnswer) {
-                score++;
-                alert("Correct!");
-            } else {
-                alert(`Wrong! The correct answer was: ${correctAnswer}`);
-            }
+            const response = await fetch("/submit_answer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ user_answer: userAnswer, correct_answer: correctAnswer }),
+            });
 
-            currentQuestionIndex++;
-            if (currentQuestionIndex < questions.length) {
-                showQuestion();
-            } else {
-                alert(`Quiz finished! Your final score is: ${score}/${questions.length}`);
-                document.getElementById("restart-btn").style.display = "block";
-                document.getElementById("reset-btn").style.display = "block";
+            if (response.ok) {
+                const result = await response.json();
+                if (result.correct) {
+                    score++;
+                    alert("Correct!");
+                } else {
+                    alert(`Wrong! The correct answer was: ${correctAnswer}`);
+                }
+
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    showQuestion();
+                } else {
+                    alert(`Quiz finished! Your final score is: ${score}/${questions.length}`);
+                    resetQuiz();
+                }
             }
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            document.getElementById("setup").style.display = "block";
+            document.getElementById("quiz").style.display = "none";
         }
     </script>
 </body>
